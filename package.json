@@ -10,6 +10,6 @@
     "ws": "^8.2.2"
   },
   "scripts": {
-    "run": "ts-node src/index.ts"
+    "proxy": "ts-node src/index.ts"
   }
 }

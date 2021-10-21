@@ -9,7 +9,14 @@ const MAX_PACKET_SIZE = 1280;
 const ws = new WS.Server({ host: '127.0.0.1', port: 5050, clientTracking: true })
 
 const main = async () => {
-    console.log('websocket server listening on 127.0.0.1:5050')
+    const args = process.argv.slice(2)
+    let remoteAddr = '127.0.0.1'
+
+    if (args.length > 0) {
+        remoteAddr = args[0]
+    }
+
+    console.log(`websocket server listening on ${remoteAddr}:5050`)
     ws.on("connection", async (websocket, req) => {
         const udpsocket = dgram.createSocket({
             recvBufferSize: 16 * MAX_PACKET_SIZE,
@@ -17,18 +24,18 @@ const main = async () => {
             type: "udp4"
         });
         udpsocket.on("message", (data, rinfo) => {
-            console.log('sending message to', rinfo.address)
+            console.log('incoming message from', rinfo.address, rinfo.port)
             const connInfo = Uint8Array.from(Buffer.from(JSON.stringify(rinfo)))
             const connLength = Buffer.from(connInfo.length.toString())
             const msg = new Uint8Array([...connLength, ...connInfo, ...Uint8Array.from(data)])
             websocket.send(msg)
         });
         console.log(`incoming connection from ${req.socket.remoteAddress}:${req.socket.remotePort}`)
-        const remoteAddr = req.socket.remoteAddress;
         const remotePort = await getPort({ port: getPort.makeRange(3000, 65535) });
         // Send external IP address/port to websocket client to update ENR
         websocket.send(JSON.stringify({ address: remoteAddr, port: remotePort }));
-
+        udpsocket.bind(remotePort)
+        console.log('UDP proxy listening on ', remoteAddr, remotePort)
         websocket.on("message", (data) => {
             try {
                 const address = ipCodec.decode(Buffer.from(data.slice(0, 4) as ArrayBuffer))
