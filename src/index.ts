@@ -48,6 +48,7 @@ const main = async () => {
                 console.log(err)
             }
         })
+        websocket.on("close", () => udpsocket.close())
     })
 }
 
