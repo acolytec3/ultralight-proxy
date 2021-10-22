@@ -31,10 +31,18 @@ const main = async () => {
             websocket.send(msg)
         });
         console.log(`incoming connection from ${req.socket.remoteAddress}:${req.socket.remotePort}`)
-        const remotePort = await getPort({ port: getPort.makeRange(3000, 65535) });
+        let foundPort = false
+        let remotePort;
+        while (!foundPort) {
+            remotePort = await getPort({ port: getPort.makeRange(3000, 65535) });
+            try {
+                udpsocket.bind(remotePort)
+                foundPort = true
+            }
+            catch { console.log('port not available, trying again') }
+        }
         // Send external IP address/port to websocket client to update ENR
         websocket.send(JSON.stringify({ address: remoteAddr, port: remotePort }));
-        udpsocket.bind(remotePort)
         console.log('UDP proxy listening on ', remoteAddr, remotePort)
         websocket.on("message", (data) => {
             try {
