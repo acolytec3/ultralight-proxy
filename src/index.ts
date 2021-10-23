@@ -18,11 +18,20 @@ const main = async () => {
 
     console.log(`websocket server listening on ${remoteAddr}:5050`)
     ws.on("connection", async (websocket, req) => {
-        const udpsocket = dgram.createSocket({
-            recvBufferSize: 16 * MAX_PACKET_SIZE,
-            sendBufferSize: MAX_PACKET_SIZE,
-            type: "udp4"
-        });
+        let udpsocket: any;
+        while (!(udpsocket instanceof dgram.Socket)) {
+            try {
+                udpsocket = dgram.createSocket({
+                    recvBufferSize: 16 * MAX_PACKET_SIZE,
+                    sendBufferSize: MAX_PACKET_SIZE,
+                    type: "udp4"
+                });
+            }
+            catch (error) {
+                console.log(error)
+            }
+        }
+
         udpsocket.on("message", (data, rinfo) => {
             console.log('incoming message from', rinfo.address, rinfo.port)
             const connInfo = Uint8Array.from(Buffer.from(JSON.stringify(rinfo)))
@@ -56,7 +65,7 @@ const main = async () => {
                 console.log(err)
             }
         })
-        websocket.on("close", () => udpsocket.close())
+        websocket.on("close", (rinfo) => { console.log("socket closed", req.socket.remotePort); udpsocket.close() })
     })
 }
 
