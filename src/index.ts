@@ -2,7 +2,6 @@
 import WS from 'ws';
 import * as dgram from 'dgram'
 import ipCodec from '@leichtgewicht/ip-codec'
-import getPort from 'get-port'
 
 const MAX_PACKET_SIZE = 1280;
 
@@ -18,20 +17,11 @@ const main = async () => {
 
     console.log(`websocket server listening on ${remoteAddr}:5050`)
     ws.on("connection", async (websocket, req) => {
-        let udpsocket: any;
-        while (!(udpsocket instanceof dgram.Socket)) {
-            try {
-                udpsocket = dgram.createSocket({
+        const udpsocket = dgram.createSocket({
                     recvBufferSize: 16 * MAX_PACKET_SIZE,
                     sendBufferSize: MAX_PACKET_SIZE,
                     type: "udp4"
-                });
-            }
-            catch (error) {
-                console.log(error)
-            }
-        }
-
+        });
         udpsocket.on("message", (data, rinfo) => {
             console.log('incoming message from', rinfo.address, rinfo.port)
             const connInfo = Uint8Array.from(Buffer.from(JSON.stringify(rinfo)))
@@ -40,15 +30,15 @@ const main = async () => {
             websocket.send(msg)
         });
         console.log(`incoming connection from ${req.socket.remoteAddress}:${req.socket.remotePort}`)
-        let foundPort = false
-        let remotePort;
+        let remotePort: number = 1;
+        let foundPort = false;
         while (!foundPort) {
-            remotePort = await getPort({ port: getPort.makeRange(3000, 65535) });
+            remotePort = Math.floor(Math.random() * 65535)
             try {
                 udpsocket.bind(remotePort)
                 foundPort = true
             }
-            catch { console.log('port not available, trying again') }
+            catch { }
         }
         // Send external IP address/port to websocket client to update ENR
         websocket.send(JSON.stringify({ address: remoteAddr, port: remotePort }));

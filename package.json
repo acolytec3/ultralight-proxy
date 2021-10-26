@@ -6,7 +6,6 @@
   },
   "dependencies": {
     "@leichtgewicht/ip-codec": "^2.0.3",
-    "get-port": "^5.1.1",
     "ws": "^8.2.2"
   },
   "scripts": {
