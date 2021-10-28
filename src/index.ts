@@ -46,7 +46,7 @@ const main = async () => {
         websocket.on("message", (data) => {
             try {
                 const address = ipCodec.decode(Buffer.from(data.slice(0, 4) as ArrayBuffer))
-                const port = parseInt(Buffer.from(data.slice(4.4) as ArrayBuffer).toString())
+                const port = Buffer.from(data as ArrayBuffer).readUIntBE(4, 2)
                 const payload = Buffer.from(data.slice(8) as ArrayBuffer)
                 console.log('outbound message to', address, port)
                 udpsocket.send(payload, port, address)
